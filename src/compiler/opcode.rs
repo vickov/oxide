@@ -83,4 +83,7 @@ pub enum Op {
     // --- Async ---
     Await { dst: Reg, src: Reg },
     Yield { dst: Reg, src: Reg },
+
+    InstanceOf { dst: Reg, obj: Reg, ctor: Reg },
+    In         { dst: Reg, key: Reg, obj: Reg },
 }
