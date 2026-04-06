@@ -1,4 +1,4 @@
-﻿//! Module 3 — Garbage Collector
+//! Module 3 — Garbage Collector
 //! Mark-and-sweep with generational collection and write barriers.
 //! GC soundness is formally proven via Kani + Verus.
 //!

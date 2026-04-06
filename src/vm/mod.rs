@@ -1,4 +1,4 @@
-﻿//! Module 7 — Bytecode Interpreter
+//! Module 7 — Bytecode Interpreter
 //! Executes bytecode instructions one at a time.
 //! Call stack is an explicit Vec<CallFrame> — not the Rust call stack.
 //! Stack overflow => JsException, never a Rust panic.

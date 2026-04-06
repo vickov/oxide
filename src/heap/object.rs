@@ -1,4 +1,4 @@
-﻿//! Module 4 — Object Model + Hidden Classes (Shapes)
+//! Module 4 — Object Model + Hidden Classes (Shapes)
 //! JS objects are dictionaries. The shape system makes them struct-like for JIT.
 
 use super::value::{JsValue, StringId};

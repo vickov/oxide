@@ -1,4 +1,4 @@
-﻿//! Module 9 — Prototype Chain
+//! Module 9 — Prototype Chain
 //! Property lookup traverses the prototype chain on cache miss.
 //! Built-in prototype chain registered at engine init.
 

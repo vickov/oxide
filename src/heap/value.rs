@@ -1,4 +1,4 @@
-﻿//! Module 1 — Value Representation (NaN-boxing)
+//! Module 1 — Value Representation (NaN-boxing)
 //!
 //! Every JS value fits in a single 64-bit word.
 //! No heap allocation for primitives.

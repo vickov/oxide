@@ -1,4 +1,4 @@
-﻿# Oxide
+# Oxide
 
 **A formally verified JavaScript engine in pure Rust.**
 

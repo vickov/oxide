@@ -1,4 +1,4 @@
-﻿//! Bytecode instruction set — ~45 opcodes, register-based.
+//! Bytecode instruction set — ~45 opcodes, register-based.
 //! All instructions reference registers by index (u8).
 
 pub type Reg = u8;

@@ -1,4 +1,4 @@
-﻿//! Call frame — one activation record on the explicit call stack.
+//! Call frame — one activation record on the explicit call stack.
 
 use crate::heap::value::JsValue;
 use crate::heap::HeapRef;

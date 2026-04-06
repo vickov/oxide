@@ -1,4 +1,4 @@
-﻿//! Arena allocator — Module 2
+//! Arena allocator — Module 2
 //! Separate typed arenas per object kind for cache locality.
 //! HeapRef is always a u32 index — compactness + no aliasing.
 

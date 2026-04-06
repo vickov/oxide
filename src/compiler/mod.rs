@@ -1,4 +1,4 @@
-﻿//! Module 6 — Bytecode Compiler
+//! Module 6 — Bytecode Compiler
 //! Transforms oxc semantic AST into register-based bytecode (~45 opcodes).
 //! Register-based (like V8 Ignition) — more efficient than stack-based (JVM).
 

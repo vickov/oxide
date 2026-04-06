@@ -1,4 +1,4 @@
-﻿//! Module 1 + 2 + 4 + 9 + 10 — Value, Heap, Object Model, Prototype, Closures
+//! Module 1 + 2 + 4 + 9 + 10 — Value, Heap, Object Model, Prototype, Closures
 //!
 //! The heap is the single most architecturally critical component.
 //! All other modules depend on it being correct and stable.

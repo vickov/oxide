@@ -1,31 +1,33 @@
-﻿[package]
-name = " oxide\
-version = \0.1.0\
-edition = \2021\
-description = \A formally verified JavaScript engine in pure Rust. No C. No GC pauses. No CVEs.\
-license = \MIT OR Apache-2.0\
-repository = \https://github.com/vickov/oxide\
-keywords = [\javascript\, \engine\, \gc\, \no-std\, \wasm\]
-categories = [\compilers\, \no-std\]
+[package]
+name = "oxide"
+version = "0.1.0"
+edition = "2021"
+description = "A formally verified JavaScript engine in pure Rust. No C. No GC pauses. No CVEs."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/vickov/oxide"
+keywords = ["javascript", "engine", "gc", "no-std", "wasm"]
+categories = ["compilers", "no-std"]
 
 [dependencies]
-oxc_parser = { version = \0.60\, optional = true }
-oxc_ast = { version = \0.60\, optional = true }
-oxc_semantic = { version = \0.60\, optional = true }
+oxc_parser   = { version = "0.60", optional = true }
+oxc_ast      = { version = "0.60", optional = true }
+oxc_semantic = { version = "0.60", optional = true }
 
 [dev-dependencies]
-proptest = \1\
+proptest = "1"
 
 [features]
-default = [\parser\]
-parser = [\dep:oxc_parser\, \dep:oxc_ast\, \dep:oxc_semantic\]
-jit = []
+default = ["parser"]
+parser  = ["dep:oxc_parser", "dep:oxc_ast", "dep:oxc_semantic"]
+jit     = []
 
 [profile.release]
-opt-level = 3
-lto = true
+opt-level     = 3
+lto           = true
 codegen-units = 1
 
 [profile.dev]
 opt-level = 0
-debug = true
+debug     = true
+
+[workspace]
