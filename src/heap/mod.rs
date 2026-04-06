@@ -11,6 +11,9 @@ pub mod closure;
 
 /// The JS heap — owns all JS objects, strings, functions, and cells.
 /// HeapRef is always a u32 index — never a raw pointer.
+/// A native Rust function callable from JS. args[0] = this, args[1..] = call args.
+pub type NativeFn = fn(&mut JsHeap, &[value::JsValue]) -> crate::vm::exception::JsResult<value::JsValue>;
+
 pub struct JsHeap {
     pub objects:   arena::Arena<object::JsObject>,
     pub functions: arena::Arena<closure::JsFunction>,
@@ -18,6 +21,8 @@ pub struct JsHeap {
     pub strings:   value::StringInterner,
     pub shapes:    object::ShapeTable,
     pub gc_state:  crate::gc::GcState,
+    pub natives:   Vec<NativeFn>,
+    pub global:    Option<HeapRef>,
 }
 
 impl JsHeap {
@@ -29,6 +34,8 @@ impl JsHeap {
             strings:   value::StringInterner::new(),
             shapes:    object::ShapeTable::new(),
             gc_state:  crate::gc::GcState::new(),
+            natives:   Vec::new(),
+            global:    None,
         }
     }
 }
@@ -41,3 +48,14 @@ impl Default for JsHeap {
 /// This eliminates Rust aliasing issues for cyclic JS object graphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct HeapRef(pub u32);
+
+impl JsHeap {
+    pub fn call_native(&mut self, id: u32, args: &[crate::heap::value::JsValue])
+        -> crate::vm::exception::JsResult<crate::heap::value::JsValue>
+    {
+        let func = self.natives.get(id as usize).copied()
+            .ok_or_else(|| crate::vm::exception::JsException::Internal(
+                format!("native fn {} not registered", id)))?;
+        func(self, args)
+    }
+}

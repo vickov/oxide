@@ -36,8 +36,10 @@ pub struct JsEngine {
 
 impl JsEngine {
     pub fn new() -> Self {
-        Self {
-            heap:       heap::JsHeap::new(),
+        let mut heap = heap::JsHeap::new();
+        crate::builtins::register_all(&mut heap);
+        Self { heap,
+
             microtasks: runtime::promise::MicrotaskQueue::new(),
             timers:     runtime::event_loop::TimerRegistry::new(),
         }

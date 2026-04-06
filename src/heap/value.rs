@@ -75,6 +75,15 @@ impl StringInterner {
     }
 
     pub fn get(&self, id: StringId) -> &str { &self.strings[id.0 as usize] }
+
+    pub fn get_id(&self, s: &str) -> Option<StringId> { self.index.get(s).copied() }
 }
 
 impl Default for StringInterner { fn default() -> Self { Self::new() } }
+
+const TAG_NATIVE: u64 = NAN_MASK | 0x0005_0000_0000_0000;
+pub fn from_native(id: u32) -> JsValue { TAG_NATIVE | id as u64 }
+pub fn is_native(v: JsValue)  -> bool  { v & 0xFFFF_0000_0000_0000 == TAG_NATIVE }
+pub fn as_native(v: JsValue)  -> Option<u32> {
+    if is_native(v) { Some((v & 0xFFFF_FFFF) as u32) } else { None }
+}

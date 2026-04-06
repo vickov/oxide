@@ -423,8 +423,39 @@ pub fn eval(
 
             // Stubs for remaining ops
             match op {
-                Op::Call       { dst, .. } => { frame.set_reg(*dst, UNDEFINED); }
-                Op::CallMethod { dst, .. } => { frame.set_reg(*dst, UNDEFINED); }
+                Op::Call { dst, func, this, argc } => {
+            let func_val = frame.reg(*func);
+            let this_val = frame.reg(*this);
+            if let Some(native_id) = crate::heap::value::as_native(func_val) {
+                let mut call_args = vec![this_val];
+                for i in 0..*argc { call_args.push(frame.reg(this.wrapping_add(1 + i))); }
+                match heap.call_native(native_id, &call_args) {
+                    Ok(v)  => frame.set_reg(*dst, v),
+                    Err(e) => return Err(e),
+                }
+            } else {
+                frame.set_reg(*dst, UNDEFINED); // JS-to-JS calls: Phase 2
+            }
+        }
+                Op::CallMethod { dst, obj, method, argc } => {
+            let obj_val = frame.reg(*obj);
+            if let Some(obj_ref) = crate::heap::value::as_object(obj_val) {
+                let name_id = crate::heap::value::StringId(*method as u32);
+                let method_val = crate::heap::prototype::get_property(heap, obj_ref, name_id);
+                if let Some(native_id) = crate::heap::value::as_native(method_val) {
+                    let mut call_args = vec![obj_val];
+                    for i in 0..*argc { call_args.push(frame.reg(obj.wrapping_add(1 + i))); }
+                    match heap.call_native(native_id, &call_args) {
+                        Ok(v)  => frame.set_reg(*dst, v),
+                        Err(e) => return Err(e),
+                    }
+                } else {
+                    frame.set_reg(*dst, UNDEFINED);
+                }
+            } else {
+                frame.set_reg(*dst, UNDEFINED);
+            }
+        }
                 Op::Await { dst, src }     => { let v = frame.reg(*src); frame.set_reg(*dst, v); }
                 Op::Yield { dst, src }     => { let v = frame.reg(*src); frame.set_reg(*dst, v); }
                 Op::InstanceOf { dst, .. } => { frame.set_reg(*dst, value::FALSE); }
