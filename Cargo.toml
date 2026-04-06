@@ -9,6 +9,8 @@ keywords = ["javascript", "engine", "gc", "no-std", "wasm"]
 categories = ["compilers", "no-std"]
 
 [dependencies]
+oxc_allocator = { version = "0.60", optional = true }
+oxc_span     = { version = "0.60", optional = true }
 oxc_parser   = { version = "0.60", optional = true }
 oxc_ast      = { version = "0.60", optional = true }
 oxc_semantic = { version = "0.60", optional = true }
@@ -18,7 +20,7 @@ proptest = "1"
 
 [features]
 default = ["parser"]
-parser  = ["dep:oxc_parser", "dep:oxc_ast", "dep:oxc_semantic"]
+parser  = ["dep:oxc_allocator", "dep:oxc_span", "dep:oxc_parser", "dep:oxc_ast", "dep:oxc_semantic"]
 jit     = []
 
 [profile.release]

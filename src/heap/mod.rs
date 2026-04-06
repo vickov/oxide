@@ -23,6 +23,7 @@ pub struct JsHeap {
     pub gc_state:  crate::gc::GcState,
     pub natives:   Vec<NativeFn>,
     pub global:    Option<HeapRef>,
+    pub bytecodes: Vec<crate::compiler::Bytecode>,
 }
 
 impl JsHeap {
@@ -36,6 +37,7 @@ impl JsHeap {
             gc_state:  crate::gc::GcState::new(),
             natives:   Vec::new(),
             global:    None,
+            bytecodes: Vec::new(),
         }
     }
 }

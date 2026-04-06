@@ -49,3 +49,12 @@ impl JsEngine {
 impl Default for JsEngine {
     fn default() -> Self { Self::new() }
 }
+
+impl JsEngine {
+    /// Compile and run a JS source string. Returns the script's return value.
+    /// Requires feature = "parser" (default).
+    #[cfg(feature = "parser")]
+    pub fn run(&mut self, source: &str) -> crate::vm::exception::JsResult<crate::heap::value::JsValue> {
+        crate::compiler::run_script(source, self)
+    }
+}

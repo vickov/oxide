@@ -1,27 +1,52 @@
-//! Module 6 — Bytecode Compiler
-//! Transforms oxc semantic AST into register-based bytecode (~45 opcodes).
-//! Register-based (like V8 Ignition) — more efficient than stack-based (JVM).
+//! Module 6 -- Bytecode Compiler
+//! Transforms oxc semantic AST into register-based bytecode.
+//! Register-based (like V8 Ignition) -- more efficient than stack-based JVM.
 
 pub mod opcode;
+pub mod codegen;
 
 pub use opcode::Op;
 
-/// A compiled function body — stored in the bytecode cache.
+use crate::heap::value::StringId;
+
+/// A compiled function body.
 pub struct Bytecode {
-    pub ops:        Vec<Op>,
-    pub constants:  Vec<crate::heap::value::JsValue>,
+    pub ops:         Vec<Op>,
+    pub constants:   Vec<crate::heap::value::JsValue>,
     pub formal_args: u32,
-    pub name:       Option<crate::heap::value::StringId>,
+    pub name:        Option<StringId>,
 }
 
-/// Bytecode compiler stub — wires oxc AST output to our bytecode IR.
-/// Full implementation: Module 6, ~4 weeks.
-pub struct Compiler {
-    bytecode_cache: Vec<Bytecode>,
+pub type BytecodeId = u32;
+
+/// Compile a JS source string and store the resulting Bytecode in the heap.
+/// Returns the BytecodeId for the top-level script function.
+#[cfg(feature = "parser")]
+pub fn compile_script(
+    source: &str,
+    heap:   &mut crate::heap::JsHeap,
+) -> crate::vm::exception::JsResult<BytecodeId> {
+    codegen::compile_script_inner(source, heap)
 }
 
-impl Compiler {
-    pub fn new() -> Self { Self { bytecode_cache: Vec::new() } }
+/// Evaluate a compiled script on the given engine.
+pub fn run_script(
+    source:  &str,
+    engine:  &mut crate::JsEngine,
+) -> crate::vm::exception::JsResult<crate::heap::value::JsValue> {
+    #[cfg(feature = "parser")]
+    {
+        let bid = compile_script(source, &mut engine.heap)?;
+        let bytecode = engine.heap.bytecodes[bid as usize].ops.clone();
+        let constants = engine.heap.bytecodes[bid as usize].constants.clone();
+        let mut frame = crate::vm::frame::CallFrame::new(bid, 64, crate::heap::value::UNDEFINED);
+        // Pre-load constants into constant register space (noop for now -- constants via LoadConst)
+        crate::vm::eval::eval(&mut engine.heap, &mut frame, &bytecode, &mut engine.microtasks)
+    }
+    #[cfg(not(feature = "parser"))]
+    {
+        Err(crate::vm::exception::JsException::Internal(
+            "compile_script requires feature = parser".into()
+        ))
+    }
 }
-
-impl Default for Compiler { fn default() -> Self { Self::new() } }
