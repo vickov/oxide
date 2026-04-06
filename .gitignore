@@ -1,0 +1,17 @@
+﻿/target
+Cargo.lock
+*.rs.bk
+*.pdb
+
+# Test262 suite (large, not committed)
+/tests/test262/
+
+# JIT compiled artifacts
+*.so
+*.dylib
+*.dll
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
