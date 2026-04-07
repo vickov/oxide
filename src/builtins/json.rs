@@ -1,7 +1,6 @@
 //! JSON.* built-ins -- Priority 1
 use crate::heap::{JsHeap, HeapRef, value::{self, JsValue, UNDEFINED}};
 use crate::vm::exception::{JsException, JsResult};
-use crate::vm::eval::js_to_number;
 use super::native::{set_fn, set, array_len, array_get, new_array, array_set};
 
 /// Convert a JsValue to a display string (for console.log).

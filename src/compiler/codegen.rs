@@ -303,7 +303,7 @@ fn compile_while(ctx: &mut FnCtx, heap: &mut JsHeap, ws: &WhileStatement) -> JsR
     compile_stmt(ctx, heap, &ws.body)?;
 
     // Back-edge: jump to loop_start
-    let _here = ctx.ip() as i32;
+    let here = ctx.ip() as i32;
     ctx.emit(Op::Jump { offset: loop_start - here });
 
     ctx.patch(exit_patch);
@@ -313,7 +313,6 @@ fn compile_while(ctx: &mut FnCtx, heap: &mut JsHeap, ws: &WhileStatement) -> JsR
     ctx.patch_all(breaks);
     // continues jump back to test
     for ci in continues {
-        let _here = ctx.ip() as i32;
         if let Op::Jump { offset: o } = &mut ctx.ops[ci] {
             *o = loop_start - ci as i32;
         }
@@ -346,7 +345,7 @@ fn compile_for(ctx: &mut FnCtx, heap: &mut JsHeap, fs: &ForStatement) -> JsResul
     let update_ip = ctx.ip() as i32;
     if let Some(update) = &fs.update { compile_expr(ctx, heap, update)?; }
 
-    let _here = ctx.ip() as i32;
+    let here = ctx.ip() as i32;
     ctx.emit(Op::Jump { offset: loop_start - here });
 
     if let Some(p) = exit_patch { ctx.patch(p); }
