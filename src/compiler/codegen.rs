@@ -303,7 +303,7 @@ fn compile_while(ctx: &mut FnCtx, heap: &mut JsHeap, ws: &WhileStatement) -> JsR
     compile_stmt(ctx, heap, &ws.body)?;
 
     // Back-edge: jump to loop_start
-    let here = ctx.ip() as i32;
+    let _here = ctx.ip() as i32;
     ctx.emit(Op::Jump { offset: loop_start - here });
 
     ctx.patch(exit_patch);
@@ -313,7 +313,7 @@ fn compile_while(ctx: &mut FnCtx, heap: &mut JsHeap, ws: &WhileStatement) -> JsR
     ctx.patch_all(breaks);
     // continues jump back to test
     for ci in continues {
-        let here = ctx.ip() as i32;
+        let _here = ctx.ip() as i32;
         if let Op::Jump { offset: o } = &mut ctx.ops[ci] {
             *o = loop_start - ci as i32;
         }
@@ -328,7 +328,6 @@ fn compile_for(ctx: &mut FnCtx, heap: &mut JsHeap, fs: &ForStatement) -> JsResul
         match init {
             ForStatementInit::VariableDeclaration(decl) => compile_var_decl(ctx, heap, decl)?,
             _ => { if let Some(e) = init.as_expression() { compile_expr(ctx, heap, e)?; } }
-            _ => {}
         }
     }
     let loop_start = ctx.ip() as i32;
@@ -347,7 +346,7 @@ fn compile_for(ctx: &mut FnCtx, heap: &mut JsHeap, fs: &ForStatement) -> JsResul
     let update_ip = ctx.ip() as i32;
     if let Some(update) = &fs.update { compile_expr(ctx, heap, update)?; }
 
-    let here = ctx.ip() as i32;
+    let _here = ctx.ip() as i32;
     ctx.emit(Op::Jump { offset: loop_start - here });
 
     if let Some(p) = exit_patch { ctx.patch(p); }
@@ -510,7 +509,7 @@ fn compile_expr(ctx: &mut FnCtx, heap: &mut JsHeap, expr: &Expression) -> JsResu
             let then  = compile_expr(ctx, heap, &ce.consequent)?;
             let jover = ctx.emit(Op::Jump { offset: 0 });
             ctx.patch(jf);
-            let alt   = compile_expr(ctx, heap, &ce.alternate)?;
+            let _alt  = compile_expr(ctx, heap, &ce.alternate)?;
             ctx.patch(jover);
             // Result is in `then` or `alt` -- use then as canonical (may differ if regs diverge)
             Ok(then)

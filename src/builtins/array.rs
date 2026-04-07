@@ -1,7 +1,7 @@
 //! Array built-in methods -- Priority 1
 use crate::heap::{JsHeap, HeapRef, value::{self, JsValue, UNDEFINED}};
 use crate::vm::exception::{JsException, JsResult};
-use crate::vm::eval::{js_to_number, js_is_truthy, num};
+use crate::vm::eval::js_to_number;
 use super::native::{set_fn, set, array_len, array_get, array_set, new_array};
 
 fn get_this(args: &[JsValue]) -> JsResult<HeapRef> {
@@ -149,7 +149,7 @@ fn arr_map(h: &mut JsHeap, a: &[JsValue]) -> JsResult<JsValue> {
 fn arr_filter(h: &mut JsHeap, a: &[JsValue]) -> JsResult<JsValue> {
     arr_slice(h, &[a.get(0).copied().unwrap_or(UNDEFINED)])
 }
-fn arr_for_each(h: &mut JsHeap, a: &[JsValue]) -> JsResult<JsValue> { let _ = get_this(a)?; Ok(UNDEFINED) }
+fn arr_for_each(_h: &mut JsHeap, a: &[JsValue]) -> JsResult<JsValue> { let _ = get_this(a)?; Ok(UNDEFINED) }
 fn arr_find(_h: &mut JsHeap, _a: &[JsValue]) -> JsResult<JsValue>      { Ok(UNDEFINED) }
 fn arr_find_idx(_h: &mut JsHeap, _a: &[JsValue]) -> JsResult<JsValue>  { Ok(value::from_int(-1)) }
 fn arr_some(_h: &mut JsHeap, _a: &[JsValue]) -> JsResult<JsValue>      { Ok(value::FALSE) }

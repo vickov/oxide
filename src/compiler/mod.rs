@@ -38,7 +38,7 @@ pub fn run_script(
     {
         let bid = compile_script(source, &mut engine.heap)?;
         let bytecode = engine.heap.bytecodes[bid as usize].ops.clone();
-        let constants = engine.heap.bytecodes[bid as usize].constants.clone();
+        let _constants = engine.heap.bytecodes[bid as usize].constants.clone();
         let mut frame = crate::vm::frame::CallFrame::new(bid, 64, crate::heap::value::UNDEFINED);
         // Pre-load constants into constant register space (noop for now -- constants via LoadConst)
         crate::vm::eval::eval(&mut engine.heap, &mut frame, &bytecode, &mut engine.microtasks)
