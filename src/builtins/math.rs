@@ -1,8 +1,8 @@
 //! Math built-in object -- Priority 1
-use crate::heap::{JsHeap, HeapRef, value::{self, JsValue, UNDEFINED}};
-use crate::vm::exception::{JsException, JsResult};
+use crate::heap::{JsHeap, HeapRef, value::{self, JsValue}};
+use crate::vm::exception::JsResult;
 use crate::vm::eval::{js_to_number, num};
-use super::native::{set_fn, set, new_array, array_set};
+use super::native::{set_fn, set};
 
 fn arg0(heap: &mut JsHeap, args: &[JsValue]) -> f64 {
     args.get(1).copied().map(|v| js_to_number(v, heap)).unwrap_or(f64::NAN)

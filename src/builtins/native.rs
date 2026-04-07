@@ -1,8 +1,7 @@
 //! Native function infrastructure.
 //! NativeFn is a plain fn pointer so it can be stored in a Vec without Rc/Box.
 
-use crate::heap::{JsHeap, HeapRef, value::{self, JsValue, StringId}};
-use crate::vm::exception::JsResult;
+use crate::heap::{JsHeap, HeapRef, value::{self, JsValue}};
 
 /// A native Rust function callable from JS.
 /// args[0] is always `this`; args[1..] are the call arguments.
