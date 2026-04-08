@@ -9,6 +9,7 @@ keywords = ["javascript", "engine", "gc", "no-std", "wasm"]
 categories = ["compilers", "no-std"]
 
 [dependencies]
+softfloat     = "1.0"
 oxc_allocator = { version = "0.60", optional = true }
 oxc_span     = { version = "0.60", optional = true }
 oxc_parser   = { version = "0.60", optional = true }
