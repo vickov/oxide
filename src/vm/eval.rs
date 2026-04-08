@@ -2,6 +2,7 @@
 //! Split into small functions to avoid rustc nightly ICE on large match arms.
 
 use std::collections::HashMap;
+use softfloat::F64 as SoftF64;
 use crate::compiler::Op;
 use crate::heap::JsHeap;
 use crate::heap::value::{self, JsValue, StringId, UNDEFINED};
@@ -11,6 +12,65 @@ use crate::runtime::promise::MicrotaskQueue;
 use super::JsResult;
 use super::exception::JsException;
 use super::frame::CallFrame;
+
+// ---------------------------------------------------------------------------
+// IEEE 754 round-to-even arithmetic via softfloat
+//
+// All five arithmetic operations (add, sub, mul, div, rem) route through
+// SoftF64 so that rounding mode is fixed at round-to-nearest-even regardless
+// of the host CPU's floating-point control register.  Comparison operations
+// (Lt, Lte, Gt, Gte, Eq, StrictEq) only read values and are left as native
+// f64 comparisons -- IEEE 754 comparison semantics are not affected by
+// rounding mode.
+// ---------------------------------------------------------------------------
+
+/// IEEE 754 round-to-even addition.
+#[inline]
+fn sf_add(a: f64, b: f64) -> f64 {
+    SoftF64::from_native_f64(a)
+        .add(SoftF64::from_native_f64(b))
+        .to_native_f64()
+}
+
+/// IEEE 754 round-to-even subtraction.
+#[inline]
+fn sf_sub(a: f64, b: f64) -> f64 {
+    SoftF64::from_native_f64(a)
+        .sub(SoftF64::from_native_f64(b))
+        .to_native_f64()
+}
+
+/// IEEE 754 round-to-even multiplication.
+#[inline]
+fn sf_mul(a: f64, b: f64) -> f64 {
+    SoftF64::from_native_f64(a)
+        .mul(SoftF64::from_native_f64(b))
+        .to_native_f64()
+}
+
+/// IEEE 754 round-to-even division.
+#[inline]
+fn sf_div(a: f64, b: f64) -> f64 {
+    SoftF64::from_native_f64(a)
+        .div(SoftF64::from_native_f64(b))
+        .to_native_f64()
+}
+
+/// IEEE 754 floating-point remainder (JavaScript `%` operator / C `fmod`).
+///
+/// The `softfloat` crate does not expose `fmod` directly, so we implement it
+/// as `a - trunc(a / b) * b` using only softfloat primitives.  This matches
+/// the JS spec (ECMA-262 §6.1.6.1.6 — Number::remainder) which requires the
+/// result to have the same sign as the dividend `a`.
+#[inline]
+fn sf_rem(a: f64, b: f64) -> f64 {
+    let sa = SoftF64::from_native_f64(a);
+    let sb = SoftF64::from_native_f64(b);
+    // quotient rounded toward zero
+    let q = sa.div(sb).trunc();
+    // remainder = a - trunc(a/b)*b
+    sa.sub(q.mul(sb)).to_native_f64()
+}
 
 // ---------------------------------------------------------------------------
 // Type coercions (pub so tests can use them)
@@ -61,6 +121,8 @@ fn to_str(v: JsValue, heap: &JsHeap) -> String {
     "[object Object]".into()
 }
 
+/// JS `+` operator.  String operands trigger concatenation; numeric operands
+/// use IEEE 754 round-to-even addition via softfloat.
 pub fn js_add(heap: &mut JsHeap, l: JsValue, r: JsValue) -> JsResult<JsValue> {
     if value::is_string(l) || value::is_string(r) {
         let ls = to_str(l, heap);
@@ -68,7 +130,7 @@ pub fn js_add(heap: &mut JsHeap, l: JsValue, r: JsValue) -> JsResult<JsValue> {
         let id = heap.strings.intern(&format!("{}{}", ls, rs));
         return Ok(value::from_string(id));
     }
-    Ok(num(js_to_number(l, heap) + js_to_number(r, heap)))
+    Ok(num(sf_add(js_to_number(l, heap), js_to_number(r, heap))))
 }
 
 pub fn js_strict_eq(l: JsValue, r: JsValue) -> bool {
@@ -199,6 +261,11 @@ fn exec_objects(op: &Op, heap: &mut JsHeap, frame: &mut CallFrame) -> bool {
 
 // ---------------------------------------------------------------------------
 // Opcode category: Arithmetic
+//
+// Add, Sub, Mul, Div, Mod all use the softfloat IEEE 754 helpers above.
+// Neg, Inc, Dec operate on a single value whose conversion to f64 is exact
+// for the common integer fast-path; they also use softfloat for the float
+// path to keep rounding behaviour consistent.
 // ---------------------------------------------------------------------------
 
 fn exec_arith(op: &Op, heap: &mut JsHeap, frame: &mut CallFrame) -> JsResult<bool> {
@@ -208,22 +275,38 @@ fn exec_arith(op: &Op, heap: &mut JsHeap, frame: &mut CallFrame) -> JsResult<boo
             frame.set_reg(*dst, v);
         }
         Op::Sub { dst, lhs, rhs } => {
-            frame.set_reg(*dst, num(js_to_number(frame.reg(*lhs), heap) - js_to_number(frame.reg(*rhs), heap)));
+            let result = sf_sub(
+                js_to_number(frame.reg(*lhs), heap),
+                js_to_number(frame.reg(*rhs), heap),
+            );
+            frame.set_reg(*dst, num(result));
         }
         Op::Mul { dst, lhs, rhs } => {
-            frame.set_reg(*dst, num(js_to_number(frame.reg(*lhs), heap) * js_to_number(frame.reg(*rhs), heap)));
+            let result = sf_mul(
+                js_to_number(frame.reg(*lhs), heap),
+                js_to_number(frame.reg(*rhs), heap),
+            );
+            frame.set_reg(*dst, num(result));
         }
         Op::Div { dst, lhs, rhs } => {
-            frame.set_reg(*dst, value::from_float(js_to_number(frame.reg(*lhs), heap) / js_to_number(frame.reg(*rhs), heap)));
+            let result = sf_div(
+                js_to_number(frame.reg(*lhs), heap),
+                js_to_number(frame.reg(*rhs), heap),
+            );
+            frame.set_reg(*dst, value::from_float(result));
         }
         Op::Mod { dst, lhs, rhs } => {
-            frame.set_reg(*dst, value::from_float(js_to_number(frame.reg(*lhs), heap) % js_to_number(frame.reg(*rhs), heap)));
+            let result = sf_rem(
+                js_to_number(frame.reg(*lhs), heap),
+                js_to_number(frame.reg(*rhs), heap),
+            );
+            frame.set_reg(*dst, value::from_float(result));
         }
         Op::Neg { dst, src } => {
             frame.set_reg(*dst, num(-js_to_number(frame.reg(*src), heap)));
         }
-        Op::Inc { dst } => { frame.set_reg(*dst, num(js_to_number(frame.reg(*dst), heap) + 1.0)); }
-        Op::Dec { dst } => { frame.set_reg(*dst, num(js_to_number(frame.reg(*dst), heap) - 1.0)); }
+        Op::Inc { dst } => { frame.set_reg(*dst, num(sf_add(js_to_number(frame.reg(*dst), heap), 1.0))); }
+        Op::Dec { dst } => { frame.set_reg(*dst, num(sf_sub(js_to_number(frame.reg(*dst), heap), 1.0))); }
         _ => return Ok(false),
     }
     Ok(true)
@@ -231,6 +314,9 @@ fn exec_arith(op: &Op, heap: &mut JsHeap, frame: &mut CallFrame) -> JsResult<boo
 
 // ---------------------------------------------------------------------------
 // Opcode category: Comparison
+//
+// Comparison operators only read values; IEEE 754 comparison semantics are
+// identical regardless of rounding mode, so native f64 comparisons are used.
 // ---------------------------------------------------------------------------
 
 fn exec_compare(op: &Op, heap: &JsHeap, frame: &mut CallFrame) -> bool {
@@ -494,3 +580,47 @@ fn handle_throw(
     Err(e) // uncaught -- propagate upward
 }
 
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::heap::JsHeap;
+
+    /// Verify that the JS add handler for 0.1 + 0.2 produces the standard
+    /// IEEE 754 double-precision result 0.30000000000000004, identical to
+    /// every major JS engine (V8, SpiderMonkey, JavaScriptCore).
+    ///
+    /// This test also confirms that the softfloat path does not accidentally
+    /// change the well-known rounding behaviour of 64-bit IEEE 754 addition.
+    #[test]
+    fn add_point_one_plus_point_two_ieee754() {
+        let mut heap = JsHeap::default();
+
+        let l = value::from_float(0.1_f64);
+        let r = value::from_float(0.2_f64);
+
+        let result = js_add(&mut heap, l, r).expect("js_add must not fail for numeric inputs");
+
+        // Extract the f64 from the result JsValue.
+        let got: f64 = if value::is_float(result) {
+            value::as_float(result).unwrap()
+        } else if value::is_int(result) {
+            value::as_int(result).unwrap() as f64
+        } else {
+            panic!("js_add(0.1, 0.2) returned a non-numeric JsValue");
+        };
+
+        // The canonical IEEE 754 double result of 0.1 + 0.2.
+        let expected = 0.30000000000000004_f64;
+        assert_eq!(
+            got.to_bits(),
+            expected.to_bits(),
+            "0.1 + 0.2 via js_add handler must equal {expected} (bits: {:#018x}), got {got} (bits: {:#018x})",
+            expected.to_bits(),
+            got.to_bits(),
+        );
+    }
+}

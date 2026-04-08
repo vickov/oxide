@@ -24,6 +24,10 @@ pub struct JsHeap {
     pub natives:   Vec<NativeFn>,
     pub global:    Option<HeapRef>,
     pub bytecodes: Vec<crate::compiler::Bytecode>,
+    /// Pending microtasks enqueued by Promise resolve/reject.
+    /// Each entry is (reaction_heap_ref, settled_value).
+    /// Drained by MicrotaskQueue::drain() and JsEngine::drain_microtasks().
+    pub pending_microtasks: std::collections::VecDeque<(HeapRef, value::JsValue)>,
 }
 
 impl JsHeap {
@@ -38,6 +42,7 @@ impl JsHeap {
             natives:   Vec::new(),
             global:    None,
             bytecodes: Vec::new(),
+            pending_microtasks: std::collections::VecDeque::new(),
         }
     }
 }
