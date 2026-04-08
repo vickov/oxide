@@ -11,6 +11,8 @@ pub enum JsException {
     Value(JsValue),
     /// Call stack depth exceeded the hard limit
     StackOverflow,
+    /// Engine fuel exhausted — prevents infinite loops in untrusted code
+    FuelExhausted,
     /// Engine bug — should never reach production
     Internal(String),
 }
